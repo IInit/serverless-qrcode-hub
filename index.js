@@ -20,7 +20,13 @@ async function initDatabase() {
       name TEXT,
       expiry TEXT,
       enabled INTEGER DEFAULT 1,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      isWechat INTEGER DEFAULT 0,
+      qrCodeData TEXT,
+      // 新增图片相关字段
+      imageUrl TEXT,
+      imageBase64 TEXT,
+      imageAlt TEXT
     )
   `).run();
 
@@ -44,6 +50,17 @@ async function initDatabase() {
     `).run();
   }
 
+  // 添加图片相关列（如果不存在）
+  if (!columns.includes('imageUrl')) {
+    await DB.prepare(`ALTER TABLE mappings ADD COLUMN imageUrl TEXT`).run();
+  }
+  if (!columns.includes('imageBase64')) {
+    await DB.prepare(`ALTER TABLE mappings ADD COLUMN imageBase64 TEXT`).run();
+  }
+  if (!columns.includes('imageAlt')) {
+    await DB.prepare(`ALTER TABLE mappings ADD COLUMN imageAlt TEXT`).run();
+  }
+  
   // 添加索引
   await DB.prepare(`
     CREATE INDEX IF NOT EXISTS idx_expiry ON mappings(expiry)
@@ -152,8 +169,8 @@ async function createMapping(path, target, name, expiry, enabled = true, isWecha
   }
 
   await DB.prepare(`
-    INSERT INTO mappings (path, target, name, expiry, enabled, isWechat, qrCodeData)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO mappings (path, target, name, expiry, enabled, isWechat, qrCodeData, imageUrl, imageBase64, imageAlt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).bind(
     path,
     target,
@@ -161,7 +178,10 @@ async function createMapping(path, target, name, expiry, enabled = true, isWecha
     expiry || null,
     enabled ? 1 : 0,
     isWechat ? 1 : 0,
-    qrCodeData
+    qrCodeData,
+    imageUrl,
+    imageBase64,
+    imageAlt
   ).run();
 }
 
@@ -195,24 +215,24 @@ async function updateMapping(originalPath, newPath, target, name, expiry, enable
   // 如果没有提供新的二维码数据，获取原有的二维码数据
   if (!qrCodeData && isWechat) {
     const existingMapping = await DB.prepare(`
-      SELECT qrCodeData
+      SELECT qrCodeData, imageUrl, imageBase64, imageAlt
       FROM mappings
       WHERE path = ?
     `).bind(originalPath).first();
 
     if (existingMapping) {
       qrCodeData = existingMapping.qrCodeData;
+      // 如果未提供新图片数据，使用原有数据
+      if (imageUrl === undefined) imageUrl = existingMapping.imageUrl;
+      if (imageBase64 === undefined) imageBase64 = existingMapping.imageBase64;
+      if (imageAlt === undefined) imageAlt = existingMapping.imageAlt;
     }
-  }
-
-  // 如果是微信二维码，必须有二维码数据
-  if (isWechat && !qrCodeData) {
-    throw new Error('微信二维码必须提供原始二维码数据');
   }
 
   const stmt = DB.prepare(`
     UPDATE mappings 
-    SET path = ?, target = ?, name = ?, expiry = ?, enabled = ?, isWechat = ?, qrCodeData = ?
+    SET path = ?, target = ?, name = ?, expiry = ?, enabled = ?, isWechat = ?, qrCodeData = ?,
+        imageUrl = ?, imageBase64 = ?, imageAlt = ?
     WHERE path = ?
   `);
 
@@ -224,6 +244,9 @@ async function updateMapping(originalPath, newPath, target, name, expiry, enable
     enabled ? 1 : 0,
     isWechat ? 1 : 0,
     qrCodeData,
+    imageUrl,
+    imageBase64,
+    imageAlt,
     originalPath
   ).run();
 }
@@ -369,6 +392,42 @@ export default {
       return Response.redirect(url.origin + '/admin.html', 302);
     }
 
+    // 处理图片上传
+    if (path === 'api/upload-image' && request.method === 'POST') {
+      if (!verifyAuthCookie(request, env)) {
+        return new Response(JSON.stringify({ success: false, error: '未授权' }), { status: 401 });
+      }
+
+      try {
+        const formData = await request.formData();
+        const file = formData.get('image');
+        
+        if (!file) {
+          return new Response(JSON.stringify({ success: false, error: '未找到图片' }), { status: 400 });
+        }
+
+        // 读取文件内容
+        const arrayBuffer = await file.arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        const mimeType = file.type || 'image/png';
+        const dataUrl = `data:${mimeType};base64,${base64}`;
+
+        // 这里可以根据需要将图片上传到云存储并获取URL
+        // 简化处理：直接返回base64和dataUrl
+        return new Response(JSON.stringify({
+          success: true,
+          data: {
+            base64,
+            dataUrl,
+            fileName: file.name,
+            mimeType
+          }
+        }));
+      } catch (error) {
+        return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500 });
+      }
+    }
+    
     // API 路由处理
     if (path.startsWith('api/')) {
       // 登录 API

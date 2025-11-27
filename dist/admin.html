@@ -3,26 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>二维码短链管理后台</title>
-  <!-- 引入外部资源 -->
+  <title>短链二维码管理系统</title>
+  <!-- 外部资源 -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/daisyui@5.0.0/dist/full.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5.3.0/dist/full.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.6.0-rc.1/lib/qr-code-styling.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
   
-  <!-- Tailwind 配置 -->
+  <!-- Tailwind配置 -->
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            primary: '#3b82f6',
-            secondary: '#10b981',
-            neutral: '#64748b',
-          },
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
+            primary: '#165DFF',
           },
         },
       }
@@ -34,19 +29,20 @@
       .content-auto {
         content-visibility: auto;
       }
-      .transition-height {
-        transition: max-height 0.3s ease-in-out;
+      .container, .admin-panel {
+        max-width: none !important;
+        width: 100% !important;
       }
     }
   </style>
 </head>
 
 <body class="bg-gray-50 min-h-screen">
-  <!-- 登录界面 -->
+  <!-- 登录页面 -->
   <div id="login-page" class="flex items-center justify-center min-h-screen p-4">
     <div class="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
       <div class="text-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">二维码短链管理</h1>
+        <h1 class="text-3xl font-bold text-primary">短链二维码管理系统</h1>
         <p class="text-gray-500 mt-2">请输入密码登录</p>
       </div>
       
@@ -63,345 +59,239 @@
         </button>
       </form>
       
-      <div id="login-error" class="mt-4 text-red-500 text-sm hidden"></div>
+      <div id="login-error" class="mt-4 text-red-500 text-sm hidden text-center"></div>
     </div>
   </div>
 
-  <!-- 管理后台主界面 -->
+  <!-- 管理后台主页面 -->
   <div id="admin-page" class="hidden">
     <!-- 顶部导航 -->
-    <header class="bg-white shadow-sm">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center">
-            <h1 class="text-xl font-semibold text-gray-800">二维码短链管理</h1>
-          </div>
-          <div class="flex items-center space-x-4">
-            <button id="logout-btn" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
-              <i class="fa fa-sign-out mr-1"></i> 退出登录
-            </button>
-          </div>
+    <nav class="bg-primary text-white shadow-md">
+      <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+        <h1 class="text-xl font-bold">短链二维码管理系统</h1>
+        <div>
+          <button id="logoutBtn" class="bg-white text-primary px-4 py-2 rounded-md hover:bg-gray-100 transition">
+            <i class="fa fa-sign-out mr-1"></i>退出登录
+          </button>
         </div>
       </div>
-    </header>
+    </nav>
 
     <!-- 主内容区 -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <!-- 操作按钮区 -->
-      <div class="mb-6 flex flex-wrap gap-4">
-        <button id="add-btn" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90">
-          <i class="fa fa-plus mr-2"></i>添加新映射
-        </button>
-        <button id="import-btn" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-          <i class="fa fa-upload mr-2"></i>导入
-        </button>
-        <button id="export-btn" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-          <i class="fa fa-download mr-2"></i>导出
-        </button>
-        <input type="file" id="import-file" accept=".json" class="hidden">
-      </div>
-
-      <!-- 搜索和过滤 -->
-      <div class="bg-white p-4 rounded-lg shadow-sm mb-6">
-        <div class="flex flex-col md:flex-row gap-4">
-          <div class="flex-1">
-            <label for="search-input" class="block text-sm font-medium text-gray-700 mb-1">搜索</label>
-            <input type="text" id="search-input" placeholder="搜索短链路径或目标地址..."
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
-          </div>
-          <div class="w-full md:w-48">
-            <label for="filter-status" class="block text-sm font-medium text-gray-700 mb-1">状态</label>
-            <select id="filter-status" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
-              <option value="all">全部</option>
-              <option value="enabled">启用</option>
-              <option value="disabled">禁用</option>
-            </select>
-          </div>
-          <div class="w-full md:w-48">
-            <label for="filter-type" class="block text-sm font-medium text-gray-700 mb-1">类型</label>
-            <select id="filter-type" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
-              <option value="all">全部</option>
-              <option value="normal">普通短链</option>
-              <option value="wechat">微信二维码</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- 数据表格 -->
-      <div class="bg-white shadow-sm rounded-lg overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">短链路径</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">名称</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">目标地址</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">类型</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">过期时间</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
-                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
-              </tr>
-            </thead>
-            <tbody id="mappings-table-body" class="bg-white divide-y divide-gray-200">
-              <!-- 表格内容将通过JS动态填充 -->
-              <tr class="text-center">
-                <td colspan="7" class="px-6 py-10 text-gray-500">加载中...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- 分页控件 -->
-        <div id="pagination" class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-          <div class="flex-1 flex justify-between sm:hidden">
-            <button id="prev-page-mobile" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-              上一页
-            </button>
-            <button id="next-page-mobile" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-              下一页
-            </button>
-          </div>
-          <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+    <div class="container mx-auto px-4 py-6">
+      <!-- 创建/编辑短链表单 -->
+      <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-xl font-semibold mb-4" id="formTitle">创建新短链</h2>
+        <form id="linkForm" class="space-y-4">
+          <input type="hidden" id="originalPath">
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <p class="text-sm text-gray-700">
-                显示第 <span id="current-range">1-10</span> 条，共 <span id="total-count">0</span> 条
-              </p>
-            </div>
-            <div>
-              <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                <button id="prev-page" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                  <span class="sr-only">上一页</span>
-                  <i class="fa fa-chevron-left"></i>
-                </button>
-                <span id="page-numbers" class="flex">
-                  <!-- 页码将通过JS动态填充 -->
+              <label for="path" class="block text-sm font-medium text-gray-700">短链路径 <span class="text-red-500">*</span></label>
+              <div class="flex">
+                <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
+                  /
                 </span>
-                <button id="next-page" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                  <span class="sr-only">下一页</span>
-                  <i class="fa fa-chevron-right"></i>
-                </button>
-              </nav>
+                <input type="text" id="path" name="path" required
+                  class="flex-1 min-w-0 block w-full px-3 py-2 border border-gray-300 rounded-r-md focus:ring-primary focus:border-primary">
+              </div>
+              <p class="text-xs text-gray-500 mt-1">只能包含字母、数字和短横线，不能使用系统保留名称</p>
+            </div>
+            
+            <div>
+              <label for="target" class="block text-sm font-medium text-gray-700">目标链接 <span class="text-red-500">*</span></label>
+              <input type="url" id="target" name="target" required
+                class="block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary">
+            </div>
+            
+            <div>
+              <label for="name" class="block text-sm font-medium text-gray-700">名称（可选）</label>
+              <input type="text" id="name" name="name"
+                class="block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary">
+            </div>
+            
+            <div>
+              <label for="expiry" class="block text-sm font-medium text-gray-700">过期时间（可选）</label>
+              <input type="datetime-local" id="expiry" name="expiry"
+                class="block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary">
             </div>
           </div>
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <!-- 添加/编辑映射的模态框 -->
-  <div id="mapping-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-      <div class="px-6 py-4 border-b border-gray-200">
-        <h3 id="modal-title" class="text-lg font-medium text-gray-900">添加新映射</h3>
+          
+          <div class="flex items-center">
+            <input type="checkbox" id="enabled" name="enabled" checked
+              class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+            <label for="enabled" class="ml-2 block text-sm text-gray-700">启用</label>
+          </div>
+          
+          <div class="flex items-center">
+            <input type="checkbox" id="isWechat" name="isWechat"
+              class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+            <label for="isWechat" class="ml-2 block text-sm text-gray-700">微信群聊二维码</label>
+          </div>
+          
+          <!-- 图片上传区域 -->
+          <div class="mt-4" id="imageUploadSection">
+            <label class="block text-sm font-medium text-gray-700">上传图片（可选）</label>
+            <input type="file" id="imageUpload" accept="image/*" class="mt-1">
+            <div id="imagePreview" class="mt-2 p-2 border border-gray-200 rounded-md min-h-[100px]">
+              <div class="text-gray-500 text-sm">图片预览将显示在这里</div>
+            </div>
+            <input type="hidden" id="imageBase64">
+            <input type="hidden" id="imageUrl">
+            <input type="text" id="imageAlt" placeholder="图片描述（可选）" class="mt-2 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary">
+          </div>
+          
+          <div id="qrCodeSection" class="hidden">
+            <label class="block text-sm font-medium text-gray-700">二维码数据</label>
+            <textarea id="qrCodeData" rows="4" readonly
+              class="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-primary focus:border-primary"></textarea>
+            <p class="text-xs text-gray-500 mt-1">扫描二维码后会自动填充上方文本框</p>
+            
+            <div class="mt-4 flex">
+              <div id="qrCodePreview" class="w-40 h-40 mr-6"></div>
+              <div>
+                <button type="button" id="generateQrCode" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 transition mr-2">生成二维码</button>
+                <button type="button" id="scanQrCode" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition">扫描二维码</button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex justify-end space-x-3">
+            <button type="button" id="cancelBtn" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">取消</button>
+            <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">保存</button>
+          </div>
+        </form>
       </div>
       
-      <form id="mapping-form" class="p-6 space-y-5">
-        <input type="hidden" id="original-path">
-        
-        <div>
-          <label for="path" class="block text-sm font-medium text-gray-700 mb-1">短链路径 <span class="text-red-500">*</span></label>
-          <div class="flex">
-            <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm">
-              /
-            </span>
-            <input type="text" id="path" name="path" required
-                   class="flex-1 min-w-0 block w-full px-3 py-2 border border-gray-300 rounded-r-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
-          </div>
-          <p class="mt-1 text-xs text-gray-500">只能包含字母、数字和短横线，不能使用系统保留名称</p>
-        </div>
-        
-        <div>
-          <label for="name" class="block text-sm font-medium text-gray-700 mb-1">名称（可选）</label>
-          <input type="text" id="name" name="name" 
-                 class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
-        </div>
-        
-        <div>
-          <label for="mapping-type" class="block text-sm font-medium text-gray-700 mb-1">映射类型 <span class="text-red-500">*</span></label>
-          <select id="mapping-type" name="mapping-type" required
-                  class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
-            <option value="normal">普通短链（跳转至URL）</option>
-            <option value="wechat">微信二维码（显示二维码图片）</option>
-          </select>
-        </div>
-        
-        <div id="target-url-group">
-          <label for="target" class="block text-sm font-medium text-gray-700 mb-1">目标URL <span class="text-red-500">*</span></label>
-          <input type="url" id="target" name="target" required
-                 class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                 placeholder="https://example.com">
-        </div>
-        
-        <div id="wechat-qrcode-group" class="hidden">
-          <label class="block text-sm font-medium text-gray-700 mb-1">微信二维码 <span class="text-red-500">*</span></label>
-          <div class="flex items-center justify-center w-full">
-            <label for="qrcode-upload" class="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-              <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                <i class="fa fa-cloud-upload text-3xl text-gray-400 mb-2"></i>
-                <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">点击上传</span> 或拖放图片</p>
-                <p class="text-xs text-gray-500">支持 PNG, JPG 或 GIF (最大 5MB)</p>
+      <!-- 短链列表 -->
+      <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold">短链列表</h2>
+            <div class="flex space-x-2">
+              <div class="relative">
+                <input type="text" id="searchInput" placeholder="搜索..." class="pl-8 pr-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary">
+                <svg class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
               </div>
-              <input id="qrcode-upload" type="file" accept="image/*" class="hidden" />
-            </label>
-          </div>
-          <div id="qrcode-preview-container" class="mt-4 hidden">
-            <p class="text-sm font-medium text-gray-700 mb-1">预览：</p>
-            <div class="flex items-center gap-4">
-              <img id="qrcode-preview" src="" alt="二维码预览" class="max-h-40 border rounded">
-              <div>
-                <button type="button" id="change-qrcode" class="text-sm text-primary hover:text-primary/80">
-                  <i class="fa fa-refresh mr-1"></i>更换图片
-                </button>
-              </div>
+              <button id="refreshBtn" class="bg-gray-100 p-2 rounded-md hover:bg-gray-200 transition">
+                <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+              </button>
             </div>
           </div>
-          <input type="hidden" id="qr-code-data">
+          
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">短链路径</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">名称</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">目标链接</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">类型</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">过期时间</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">图片</th>
+                  <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                </tr>
+              </thead>
+              <tbody id="linksTableBody" class="bg-white divide-y divide-gray-200">
+                <!-- 表格内容动态生成 -->
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- 分页控件 -->
+          <div class="flex justify-between items-center mt-4">
+            <div class="text-sm text-gray-700">
+              显示 <span id="showingRange">1-10</span> 条，共 <span id="totalCount">0</span> 条
+            </div>
+            <div class="flex space-x-2">
+              <button id="prevPage" class="px-3 py-1 border border-gray-300 rounded-md bg-white text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">上一页</button>
+              <span id="pageInfo" class="px-3 py-1 text-sm text-gray-700">第 1 页</span>
+              <button id="nextPage" class="px-3 py-1 border border-gray-300 rounded-md bg-white text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">下一页</button>
+            </div>
+          </div>
         </div>
-        
-        <div>
-          <label for="expiry" class="block text-sm font-medium text-gray-700 mb-1">过期时间（可选）</label>
-          <input type="datetime-local" id="expiry" name="expiry"
-                 class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
-          <p class="mt-1 text-xs text-gray-500">留空表示永不过期</p>
-        </div>
-        
-        <div class="flex items-center">
-          <input id="enabled" name="enabled" type="checkbox" checked
-                 class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
-          <label for="enabled" class="ml-2 block text-sm text-gray-700">
-            启用此映射
-          </label>
-        </div>
-        
-        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-          <button type="button" id="cancel-modal" 
-                  class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-            取消
-          </button>
-          <button type="submit" 
-                  class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90">
-            保存
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- 二维码预览模态框 -->
-  <div id="qr-preview-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-lg shadow-xl p-6 max-w-md">
-      <div class="px-2 py-4 border-b border-gray-200">
-        <h3 class="text-lg font-medium text-gray-900 text-center">二维码预览</h3>
-      </div>
-      <div class="p-6 flex flex-col items-center">
-        <div id="qr-code-display" class="mb-4"></div>
-        <p id="qr-code-path" class="text-center text-gray-700 mb-2"></p>
-        <button id="download-qr" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90">
-          <i class="fa fa-download mr-2"></i>下载二维码
-        </button>
       </div>
     </div>
   </div>
 
-  <!-- 确认删除模态框 -->
-  <div id="delete-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-      <div class="text-center mb-4">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
-          <i class="fa fa-exclamation-triangle text-2xl text-red-500"></i>
-        </div>
-        <h3 class="text-lg font-medium text-gray-900">确认删除</h3>
-        <p id="delete-confirm-text" class="mt-2 text-gray-500">你确定要删除这个映射吗？此操作不可撤销。</p>
+  <!-- 二维码扫描模态框 -->
+  <div id="qrScannerModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl">
+      <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 class="text-lg font-medium text-gray-900">扫描二维码</h3>
+        <button id="closeScannerBtn" class="text-gray-500 hover:text-gray-700">
+          <i class="fa fa-times"></i>
+        </button>
       </div>
-      <div class="flex justify-center space-x-3">
-        <button id="cancel-delete" 
-                class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-          取消
-        </button>
-        <button id="confirm-delete" 
-                class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700">
-          确认删除
-        </button>
+      <div class="p-6">
+        <div id="scannerContainer" class="w-full aspect-video bg-black rounded-md overflow-hidden"></div>
+        <div class="mt-4 text-center">
+          <p class="text-sm text-gray-500">请将二维码对准摄像头</p>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- 通知提示 -->
   <div id="toast" class="fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-y-20 opacity-0 z-50 flex items-center">
-    <i id="toast-icon" class="mr-2 text-xl"></i>
-    <span id="toast-message"></span>
+    <i id="toastIcon" class="mr-2 text-xl"></i>
+    <span id="toastMessage"></span>
   </div>
 
   <script>
     // 全局状态
-    const state = {
-      currentPage: 1,
-      pageSize: 10,
-      totalPages: 0,
-      totalCount: 0,
-      mappings: {},
-      currentEditingPath: null,
-      currentDeletingPath: null,
-      qrCodeStyling: null,
-      filterStatus: 'all',
-      filterType: 'all',
-      searchQuery: ''
-    };
+    let currentPage = 1;
+    let totalPages = 0;
+    let mappings = {};
+    let qrCodeInstance = null;
+    let scanner = null;
 
-    // DOM 元素
+    // DOM元素
     const elements = {
       loginPage: document.getElementById('login-page'),
       adminPage: document.getElementById('admin-page'),
       loginForm: document.getElementById('login-form'),
       loginError: document.getElementById('login-error'),
-      logoutBtn: document.getElementById('logout-btn'),
-      mappingsTableBody: document.getElementById('mappings-table-body'),
-      addBtn: document.getElementById('add-btn'),
-      mappingModal: document.getElementById('mapping-modal'),
-      modalTitle: document.getElementById('modal-title'),
-      mappingForm: document.getElementById('mapping-form'),
-      originalPath: document.getElementById('original-path'),
+      logoutBtn: document.getElementById('logoutBtn'),
+      linkForm: document.getElementById('linkForm'),
+      formTitle: document.getElementById('formTitle'),
+      originalPath: document.getElementById('originalPath'),
       path: document.getElementById('path'),
-      name: document.getElementById('name'),
-      mappingType: document.getElementById('mapping-type'),
-      targetUrlGroup: document.getElementById('target-url-group'),
-      wechatQrcodeGroup: document.getElementById('wechat-qrcode-group'),
       target: document.getElementById('target'),
-      qrcodeUpload: document.getElementById('qrcode-upload'),
-      qrcodePreviewContainer: document.getElementById('qrcode-preview-container'),
-      qrcodePreview: document.getElementById('qrcode-preview'),
-      changeQrcode: document.getElementById('change-qrcode'),
-      qrCodeData: document.getElementById('qr-code-data'),
+      name: document.getElementById('name'),
       expiry: document.getElementById('expiry'),
       enabled: document.getElementById('enabled'),
-      cancelModal: document.getElementById('cancel-modal'),
-      prevPage: document.getElementById('prev-page'),
-      nextPage: document.getElementById('next-page'),
-      prevPageMobile: document.getElementById('prev-page-mobile'),
-      nextPageMobile: document.getElementById('next-page-mobile'),
-      pageNumbers: document.getElementById('page-numbers'),
-      currentRange: document.getElementById('current-range'),
-      totalCount: document.getElementById('total-count'),
-      deleteModal: document.getElementById('delete-modal'),
-      cancelDelete: document.getElementById('cancel-delete'),
-      confirmDelete: document.getElementById('confirm-delete'),
-      deleteConfirmText: document.getElementById('delete-confirm-text'),
-      qrPreviewModal: document.getElementById('qr-preview-modal'),
-      qrCodeDisplay: document.getElementById('qr-code-display'),
-      qrCodePath: document.getElementById('qr-code-path'),
-      downloadQr: document.getElementById('download-qr'),
+      isWechat: document.getElementById('isWechat'),
+      qrCodeSection: document.getElementById('qrCodeSection'),
+      qrCodeData: document.getElementById('qrCodeData'),
+      qrCodePreview: document.getElementById('qrCodePreview'),
+      imageUpload: document.getElementById('imageUpload'),
+      imagePreview: document.getElementById('imagePreview'),
+      imageBase64: document.getElementById('imageBase64'),
+      imageUrl: document.getElementById('imageUrl'),
+      imageAlt: document.getElementById('imageAlt'),
+      cancelBtn: document.getElementById('cancelBtn'),
+      linksTableBody: document.getElementById('linksTableBody'),
+      searchInput: document.getElementById('searchInput'),
+      refreshBtn: document.getElementById('refreshBtn'),
+      prevPage: document.getElementById('prevPage'),
+      nextPage: document.getElementById('nextPage'),
+      pageInfo: document.getElementById('pageInfo'),
+      showingRange: document.getElementById('showingRange'),
+      totalCount: document.getElementById('totalCount'),
+      qrScannerModal: document.getElementById('qrScannerModal'),
+      closeScannerBtn: document.getElementById('closeScannerBtn'),
+      scannerContainer: document.getElementById('scannerContainer'),
+      generateQrCode: document.getElementById('generateQrCode'),
+      scanQrCode: document.getElementById('scanQrCode'),
       toast: document.getElementById('toast'),
-      toastIcon: document.getElementById('toast-icon'),
-      toastMessage: document.getElementById('toast-message'),
-      importBtn: document.getElementById('import-btn'),
-      exportBtn: document.getElementById('export-btn'),
-      importFile: document.getElementById('import-file'),
-      searchInput: document.getElementById('search-input'),
-      filterStatus: document.getElementById('filter-status'),
-      filterType: document.getElementById('filter-type')
+      toastIcon: document.getElementById('toastIcon'),
+      toastMessage: document.getElementById('toastMessage')
     };
 
     // 初始化
@@ -416,34 +306,28 @@
       }
 
       // 初始化二维码生成器
-      state.qrCodeStyling = new QRCodeStyling({
-        width: 256,
-        height: 256,
+      qrCodeInstance = new QRCodeStyling({
+        width: 160,
+        height: 160,
         type: "canvas",
-        data: window.location.origin,
-        image: "",
+        data: "",
         dotsOptions: {
-          color: "#3b82f6",
+          color: "#165DFF",
           type: "rounded"
         },
         backgroundOptions: {
-          color: "#ffffff",
-        },
-        imageOptions: {
-          crossOrigin: "anonymous",
-          margin: 10
+          color: "#ffffff"
         }
       });
 
-      // 绑定事件监听
+      // 绑定事件
       bindEvents();
     }
 
     // 检查登录状态
     async function checkAuth() {
       try {
-        const response = await fetch('/api/auth', {
-          method: 'GET',
+        const response = await fetch('/api/mappings?page=1&pageSize=10', {
           credentials: 'include'
         });
         return response.ok;
@@ -465,92 +349,524 @@
       elements.adminPage.classList.remove('hidden');
     }
 
-    // 加载映射列表
-    async function loadMappings() {
+    // 登录处理
+    async function login(password) {
       try {
-        const response = await fetch(`/api/mappings?page=${state.currentPage}&pageSize=${state.pageSize}`, {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ password }),
           credentials: 'include'
         });
+
+        const result = await response.json();
         
+        if (response.ok) {
+          window.location.reload();
+          return true;
+        } else {
+          showToast(result.error || '登录失败', 'error');
+          return false;
+        }
+      } catch (error) {
+        console.error('登录失败:', error);
+        showToast('登录失败，请重试', 'error');
+        return false;
+      }
+    }
+
+    // 登出处理
+    async function logout() {
+      try {
+        await fetch('/api/logout', {
+          method: 'POST',
+          credentials: 'include'
+        });
+        window.location.reload();
+      } catch (error) {
+        console.error('登出失败:', error);
+        showToast('登出失败，请重试', 'error');
+      }
+    }
+
+    // 加载短链列表
+    async function loadMappings(page = 1) {
+      try {
+        const response = await fetch(`/api/mappings?page=${page}&pageSize=10`, {
+          credentials: 'include'
+        });
+
         if (!response.ok) {
           if (response.status === 401) {
-            showToast('未授权访问，请重新登录', 'error');
             showLoginPage();
             return;
           }
           throw new Error('加载数据失败');
         }
-        
-        const data = await response.json();
-        state.mappings = data.mappings;
-        state.totalCount = data.total;
-        state.totalPages = data.totalPages;
-        state.currentPage = data.page;
-        
-        renderMappingsTable();
-        updatePagination();
+
+        const result = await response.json();
+        mappings = result.data.mappings;
+        totalPages = result.data.totalPages;
+        currentPage = result.data.page;
+
+        renderMappingsTable(result.data);
+        updatePagination(result.data);
       } catch (error) {
-        console.error('加载映射失败:', error);
+        console.error('加载短链列表失败:', error);
         showToast('加载数据失败，请重试', 'error');
-        elements.mappingsTableBody.innerHTML = `
-          <tr class="text-center">
-            <td colspan="7" class="px-6 py-10 text-red-500">加载失败，请刷新页面重试</td>
-          </tr>
-        `;
       }
     }
 
-    // 渲染映射表格
-    function renderMappingsTable() {
-      const paths = Object.keys(state.mappings);
-      let filteredPaths = paths;
-      
-      // 应用搜索过滤
-      if (state.searchQuery) {
-        const query = state.searchQuery.toLowerCase();
-        filteredPaths = filteredPaths.filter(path => {
-          const mapping = state.mappings[path];
-          return path.toLowerCase().includes(query) || 
-                 (mapping.name && mapping.name.toLowerCase().includes(query)) || 
-                 mapping.target.toLowerCase().includes(query);
-        });
-      }
-      
-      // 应用状态过滤
-      if (state.filterStatus !== 'all') {
-        const isEnabled = state.filterStatus === 'enabled';
-        filteredPaths = filteredPaths.filter(path => state.mappings[path].enabled === isEnabled);
-      }
-      
-      // 应用类型过滤
-      if (state.filterType !== 'all') {
-        const isWechat = state.filterType === 'wechat';
-        filteredPaths = filteredPaths.filter(path => state.mappings[path].isWechat === isWechat);
-      }
-      
-      if (filteredPaths.length === 0) {
-        elements.mappingsTableBody.innerHTML = `
-          <tr class="text-center">
-            <td colspan="7" class="px-6 py-10 text-gray-500">没有找到匹配的记录</td>
+    // 渲染短链列表
+    function renderMappingsTable(data) {
+      const paths = Object.keys(data.mappings);
+      elements.linksTableBody.innerHTML = '';
+
+      if (paths.length === 0) {
+        elements.linksTableBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="px-6 py-10 text-center text-gray-500">暂无数据</td>
           </tr>
         `;
         return;
       }
-      
-      elements.mappingsTableBody.innerHTML = filteredPaths.map(path => {
-        const mapping = state.mappings[path];
-        const typeLabel = mapping.isWechat ? 
-          '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">微信二维码</span>' : 
-          '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">普通短链</span>';
+
+      paths.forEach(path => {
+        const mapping = data.mappings[path];
+        const row = document.createElement('tr');
         
-        const statusLabel = mapping.enabled ? 
-          '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">启用</span>' : 
-          '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">禁用</span>';
-        
+        // 格式化过期时间
         const expiryDate = mapping.expiry ? new Date(mapping.expiry).toLocaleString() : '永久';
         
-        return `
-          <tr>
+        // 状态标签
+        const statusLabel = mapping.enabled 
+          ? '<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">启用</span>' 
+          : '<span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">禁用</span>';
+        
+        // 类型标签
+        const typeLabel = mapping.isWechat 
+          ? '<span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">微信二维码</span>' 
+          : '<span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">普通短链</span>';
+        
+        // 图片预览
+        const imagePreview = mapping.imageUrl 
+          ? `<img src="${mapping.imageUrl}" class="w-8 h-8 rounded object-cover" alt="${mapping.imageAlt || '图片'}" />` 
+          : '-';
+
+        row.innerHTML = `
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900">/${path}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-500">${mapping.name || '-'}</div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="text-sm text-gray-500 truncate max-w-xs">${mapping.target}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            ${typeLabel}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-500">${expiryDate}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            ${statusLabel}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            ${imagePreview}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <button data-path="${path}" class="text-indigo-600 hover:text-indigo-900 mr-3 edit-btn">编辑</button>
+            <button data-path="${path}" class="text-red-600 hover:text-red-900 delete-btn">删除</button>
+          </td>
+        `;
+
+        elements.linksTableBody.appendChild(row);
+      });
+
+      // 绑定编辑和删除按钮事件
+      document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => editMapping(btn.dataset.path));
+      });
+
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => deleteMapping(btn.dataset.path));
+      });
+    }
+
+    // 更新分页控件
+    function updatePagination(data) {
+      const start = (data.page - 1) * data.pageSize + 1;
+      const end = Math.min(start + data.pageSize - 1, data.total);
+      
+      elements.showingRange.textContent = `${start}-${end}`;
+      elements.totalCount.textContent = data.total;
+      elements.pageInfo.textContent = `第 ${data.page} 页`;
+      
+      elements.prevPage.disabled = data.page === 1;
+      elements.nextPage.disabled = data.page === data.totalPages;
+    }
+
+    // 创建短链
+    async function createMapping(formData) {
+      try {
+        const response = await fetch('/api/mappings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData),
+          credentials: 'include'
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          showToast('创建成功', 'success');
+          resetForm();
+          await loadMappings();
+        } else {
+          showToast(result.error || '创建失败', 'error');
+        }
+      } catch (error) {
+        console.error('创建短链失败:', error);
+        showToast('创建失败，请重试', 'error');
+      }
+    }
+
+    // 更新短链
+    async function updateMapping(formData) {
+      try {
+        const response = await fetch('/api/mappings', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData),
+          credentials: 'include'
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          showToast('更新成功', 'success');
+          resetForm();
+          await loadMappings();
+        } else {
+          showToast(result.error || '更新失败', 'error');
+        }
+      } catch (error) {
+        console.error('更新短链失败:', error);
+        showToast('更新失败，请重试', 'error');
+      }
+    }
+
+    // 删除短链
+    async function deleteMapping(path) {
+      if (!confirm(`确定要删除短链 "/${path}" 吗？此操作不可撤销。`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/mappings', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ path }),
+          credentials: 'include'
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          showToast('删除成功', 'success');
+          await loadMappings(currentPage);
+        } else {
+          showToast(result.error || '删除失败', 'error');
+        }
+      } catch (error) {
+        console.error('删除短链失败:', error);
+        showToast('删除失败，请重试', 'error');
+      }
+    }
+
+    // 编辑短链
+    function editMapping(path) {
+      const mapping = mappings[path];
+      
+      elements.formTitle.textContent = '编辑短链';
+      elements.originalPath.value = path;
+      elements.path.value = path;
+      elements.target.value = mapping.target;
+      elements.name.value = mapping.name || '';
+      elements.enabled.checked = mapping.enabled;
+      elements.isWechat.checked = mapping.isWechat;
+      
+      // 设置过期时间
+      if (mapping.expiry) {
+        const date = new Date(mapping.expiry);
+        elements.expiry.value = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+          .toISOString().slice(0, 16);
+      } else {
+        elements.expiry.value = '';
+      }
+      
+      // 设置二维码数据
+      if (mapping.isWechat) {
+        elements.qrCodeSection.classList.remove('hidden');
+        elements.qrCodeData.value = mapping.qrCodeData || '';
+        if (mapping.qrCodeData) {
+          updateQrCodePreview(mapping.qrCodeData);
+        }
+      } else {
+        elements.qrCodeSection.classList.add('hidden');
+      }
+      
+      // 设置图片数据
+      if (mapping.imageUrl) {
+        elements.imagePreview.innerHTML = `
+          <img src="${mapping.imageUrl}" class="max-h-64 max-w-full" />
+          <button type="button" id="removeImage" class="mt-2 text-red-500 text-sm hover:text-red-700">
+            移除图片
+          </button>
+        `;
+        elements.imageBase64.value = mapping.imageBase64 || '';
+        elements.imageUrl.value = mapping.imageUrl;
+        elements.imageAlt.value = mapping.imageAlt || '';
+        
+        document.getElementById('removeImage').addEventListener('click', removeImage);
+      } else {
+        elements.imagePreview.innerHTML = '<div class="text-gray-500 text-sm">图片预览将显示在这里</div>';
+        elements.imageBase64.value = '';
+        elements.imageUrl.value = '';
+        elements.imageAlt.value = '';
+      }
+    }
+
+    // 重置表单
+    function resetForm() {
+      elements.formTitle.textContent = '创建新短链';
+      elements.linkForm.reset();
+      elements.originalPath.value = '';
+      elements.qrCodeSection.classList.add('hidden');
+      elements.qrCodeData.value = '';
+      elements.imagePreview.innerHTML = '<div class="text-gray-500 text-sm">图片预览将显示在这里</div>';
+      elements.imageBase64.value = '';
+      elements.imageUrl.value = '';
+      elements.imageAlt.value = '';
+      
+      if (qrCodeInstance) {
+        qrCodeInstance.clear();
+      }
+    }
+
+    // 处理图片上传
+    function handleImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        elements.imagePreview.innerHTML = `
+          <img src="${event.target.result}" class="max-h-64 max-w-full" />
+          <button type="button" id="removeImage" class="mt-2 text-red-500 text-sm hover:text-red-700">
+            移除图片
+          </button>
+        `;
+        
+        elements.imageBase64.value = event.target.result.split(',')[1];
+        elements.imageUrl.value = event.target.result;
+        
+        document.getElementById('removeImage').addEventListener('click', removeImage);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // 移除图片
+    function removeImage() {
+      elements.imagePreview.innerHTML = '<div class="text-gray-500 text-sm">图片预览将显示在这里</div>';
+      elements.imageUpload.value = '';
+      elements.imageBase64.value = '';
+      elements.imageUrl.value = '';
+      elements.imageAlt.value = '';
+    }
+
+    // 更新二维码预览
+    function updateQrCodePreview(data) {
+      if (!qrCodeInstance) return;
+      
+      qrCodeInstance.update({
+        data: data || elements.path.value
+      });
+      
+      elements.qrCodePreview.innerHTML = '';
+      qrCodeInstance.append(elements.qrCodePreview);
+    }
+
+    // 生成二维码
+    function generateQrCode() {
+      const data = elements.path.value || window.location.origin;
+      elements.qrCodeData.value = data;
+      updateQrCodePreview(data);
+    }
+
+    // 显示提示消息
+    function showToast(message, type = 'info') {
+      elements.toastMessage.textContent = message;
+      
+      if (type === 'success') {
+        elements.toast.className = 'fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-y-0 opacity-100 z-50 flex items-center bg-green-50 text-green-800';
+        elements.toastIcon.className = 'mr-2 text-xl text-green-500';
+        elements.toastIcon.innerHTML = '<i class="fa fa-check-circle"></i>';
+      } else if (type === 'error') {
+        elements.toast.className = 'fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-y-0 opacity-100 z-50 flex items-center bg-red-50 text-red-800';
+        elements.toastIcon.className = 'mr-2 text-xl text-red-500';
+        elements.toastIcon.innerHTML = '<i class="fa fa-exclamation-circle"></i>';
+      } else {
+        elements.toast.className = 'fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-y-0 opacity-100 z-50 flex items-center bg-blue-50 text-blue-800';
+        elements.toastIcon.className = 'mr-2 text-xl text-blue-500';
+        elements.toastIcon.innerHTML = '<i class="fa fa-info-circle"></i>';
+      }
+      
+      setTimeout(() => {
+        elements.toast.className = 'fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-y-20 opacity-0 z-50 flex items-center';
+      }, 3000);
+    }
+
+    // 绑定事件处理
+    function bindEvents() {
+      // 登录表单提交
+      elements.loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        elements.loginError.classList.add('hidden');
+        
+        const password = elements.loginForm.elements.password.value;
+        await login(password);
+      });
+
+      // 登出按钮
+      elements.logoutBtn.addEventListener('click', logout);
+
+      // 表单提交
+      elements.linkForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = {
+          path: elements.path.value.trim(),
+          target: elements.target.value.trim(),
+          name: elements.name.value.trim() || null,
+          expiry: elements.expiry.value || null,
+          enabled: elements.enabled.checked,
+          isWechat: elements.isWechat.checked,
+          qrCodeData: elements.isWechat.checked ? elements.qrCodeData.value.trim() : null,
+          imageUrl: elements.imageUrl.value || null,
+          imageBase64: elements.imageBase64.value || null,
+          imageAlt: elements.imageAlt.value.trim() || null
+        };
+
+        // 验证
+        if (!formData.path) {
+          showToast('短链路径不能为空', 'error');
+          return;
+        }
+
+        if (!formData.target) {
+          showToast('目标链接不能为空', 'error');
+          return;
+        }
+
+        if (formData.isWechat && !formData.qrCodeData) {
+          showToast('请生成或扫描二维码', 'error');
+          return;
+        }
+
+        // 判断是创建还是更新
+        if (elements.originalPath.value) {
+          formData.originalPath = elements.originalPath.value;
+          formData.newPath = formData.path;
+          await updateMapping(formData);
+        } else {
+          await createMapping(formData);
+        }
+      });
+
+      // 取消按钮
+      elements.cancelBtn.addEventListener('click', resetForm);
+
+      // 微信二维码复选框切换
+      elements.isWechat.addEventListener('change', () => {
+        if (elements.isWechat.checked) {
+          elements.qrCodeSection.classList.remove('hidden');
+          generateQrCode();
+        } else {
+          elements.qrCodeSection.classList.add('hidden');
+        }
+      });
+
+      // 图片上传
+      elements.imageUpload.addEventListener('change', handleImageUpload);
+
+      // 生成二维码按钮
+      elements.generateQrCode.addEventListener('click', generateQrCode);
+
+      // 分页按钮
+      elements.prevPage.addEventListener('click', () => {
+        if (currentPage > 1) {
+          loadMappings(currentPage - 1);
+        }
+      });
+
+      elements.nextPage.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+          loadMappings(currentPage + 1);
+        }
+      });
+
+      // 刷新按钮
+      elements.refreshBtn.addEventListener('click', () => {
+        loadMappings(currentPage);
+      });
+
+      // 搜索功能
+      elements.searchInput.addEventListener('input', debounce(async (e) => {
+        // 简单前端搜索过滤
+        const searchTerm = e.target.value.toLowerCase();
+        const filteredPaths = Object.keys(mappings).filter(path => {
+          const mapping = mappings[path];
+          return path.toLowerCase().includes(searchTerm) ||
+                 (mapping.name && mapping.name.toLowerCase().includes(searchTerm)) ||
+                 mapping.target.toLowerCase().includes(searchTerm);
+        });
+
+        if (filteredPaths.length === 0) {
+          elements.linksTableBody.innerHTML = `
+            <tr>
+              <td colspan="8" class="px-6 py-10 text-center text-gray-500">未找到匹配数据</td>
+            </tr>
+          `;
+          return;
+        }
+
+        elements.linksTableBody.innerHTML = '';
+        filteredPaths.forEach(path => {
+          const mapping = mappings[path];
+          const row = document.createElement('tr');
+          
+          const expiryDate = mapping.expiry ? new Date(mapping.expiry).toLocaleString() : '永久';
+          const statusLabel = mapping.enabled 
+            ? '<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">启用</span>' 
+            : '<span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">禁用</span>';
+          const typeLabel = mapping.isWechat 
+            ? '<span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">微信二维码</span>' 
+            : '<span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">普通短链</span>';
+          const imagePreview = mapping.imageUrl 
+            ? `<img src="${mapping.imageUrl}" class="w-8 h-8 rounded object-cover" alt="${mapping.imageAlt || '图片'}" />` 
+            : '-';
+
+          row.innerHTML = `
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="text-sm font-medium text-gray-900">/${path}</div>
             </td>
@@ -569,558 +885,38 @@
             <td class="px-6 py-4 whitespace-nowrap">
               ${statusLabel}
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <div class="flex justify-end space-x-2">
-                ${mapping.isWechat ? `
-                  <button data-path="${path}" class="view-qr-btn text-purple-600 hover:text-purple-900">
-                    <i class="fa fa-qrcode"></i> 预览
-                  </button>
-                ` : ''}
-                <button data-path="${path}" class="edit-btn text-indigo-600 hover:text-indigo-900">
-                  <i class="fa fa-pencil"></i> 编辑
-                </button>
-                <button data-path="${path}" class="delete-btn text-red-600 hover:text-red-900">
-                  <i class="fa fa-trash"></i> 删除
-                </button>
-              </div>
+            <td class="px-6 py-4 whitespace-nowrap">
+              ${imagePreview}
             </td>
-          </tr>
-        `;
-      }).join('');
-      
-      // 绑定表格按钮事件
-      document.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.addEventListener('click', () => editMapping(btn.dataset.path));
-      });
-      
-      document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', () => showDeleteModal(btn.dataset.path));
-      });
-      
-      document.querySelectorAll('.view-qr-btn').forEach(btn => {
-        btn.addEventListener('click', () => showQrPreview(btn.dataset.path));
-      });
-    }
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <button data-path="${path}" class="text-indigo-600 hover:text-indigo-900 mr-3 edit-btn">编辑</button>
+              <button data-path="${path}" class="text-red-600 hover:text-red-900 delete-btn">删除</button>
+            </td>
+          `;
 
-    // 更新分页控件
-    function updatePagination() {
-      const start = (state.currentPage - 1) * state.pageSize + 1;
-      const end = Math.min(start + state.pageSize - 1, state.totalCount);
-      elements.currentRange.textContent = `${start}-${end}`;
-      elements.totalCount.textContent = state.totalCount;
-      
-      // 更新页码按钮
-      elements.pageNumbers.innerHTML = '';
-      
-      // 最多显示5个页码
-      let startPage = Math.max(1, state.currentPage - 2);
-      let endPage = Math.min(state.totalPages, startPage + 4);
-      
-      // 如果接近末尾，调整起始页码
-      if (endPage - startPage < 4 && startPage > 1) {
-        startPage = Math.max(1, endPage - 4);
-      }
-      
-      for (let i = startPage; i <= endPage; i++) {
-        const button = document.createElement('button');
-        button.className = `relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium ${
-          i === state.currentPage ? 'z-10 bg-primary text-white border-primary' : 'text-gray-700 hover:bg-gray-50'
-        }`;
-        button.textContent = i;
-        button.addEventListener('click', () => goToPage(i));
-        elements.pageNumbers.appendChild(button);
-      }
-      
-      // 禁用/启用上一页/下一页按钮
-      elements.prevPage.disabled = state.currentPage === 1;
-      elements.prevPageMobile.disabled = state.currentPage === 1;
-      elements.nextPage.disabled = state.currentPage === state.totalPages;
-      elements.nextPageMobile.disabled = state.currentPage === state.totalPages;
-      
-      elements.prevPage.classList.toggle('opacity-50', state.currentPage === 1);
-      elements.prevPageMobile.classList.toggle('opacity-50', state.currentPage === 1);
-      elements.nextPage.classList.toggle('opacity-50', state.currentPage === state.totalPages);
-      elements.nextPageMobile.classList.toggle('opacity-50', state.currentPage === state.totalPages);
-    }
-
-    // 跳转到指定页码
-    function goToPage(page) {
-      if (page < 1 || page > state.totalPages || page === state.currentPage) return;
-      state.currentPage = page;
-      loadMappings();
-    }
-
-    // 显示添加映射模态框
-    function showAddModal() {
-      state.currentEditingPath = null;
-      elements.modalTitle.textContent = '添加新映射';
-      elements.originalPath.value = '';
-      elements.path.value = '';
-      elements.name.value = '';
-      elements.target.value = '';
-      elements.qrCodeData.value = '';
-      elements.expiry.value = '';
-      elements.enabled.checked = true;
-      elements.mappingType.value = 'normal';
-      elements.targetUrlGroup.classList.remove('hidden');
-      elements.wechatQrcodeGroup.classList.add('hidden');
-      elements.qrcodePreviewContainer.classList.add('hidden');
-      elements.qrcodePreview.src = '';
-      
-      elements.mappingModal.classList.remove('hidden');
-    }
-
-    // 显示编辑映射模态框
-    async function editMapping(path) {
-      state.currentEditingPath = path;
-      const mapping = state.mappings[path];
-      
-      elements.modalTitle.textContent = '编辑映射';
-      elements.originalPath.value = path;
-      elements.path.value = path;
-      elements.name.value = mapping.name || '';
-      elements.target.value = mapping.target;
-      elements.qrCodeData.value = mapping.qrCodeData || '';
-      elements.enabled.checked = mapping.enabled;
-      
-      // 设置过期时间（转换为本地时间的ISO格式）
-      if (mapping.expiry) {
-        const date = new Date(mapping.expiry);
-        // 转换为本地时间的ISO格式（不含时区）
-        elements.expiry.value = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-      } else {
-        elements.expiry.value = '';
-      }
-      
-      // 设置映射类型
-      elements.mappingType.value = mapping.isWechat ? 'wechat' : 'normal';
-      if (mapping.isWechat) {
-        elements.targetUrlGroup.classList.add('hidden');
-        elements.wechatQrcodeGroup.classList.remove('hidden');
-        
-        // 显示已有的二维码
-        if (mapping.qrCodeData) {
-          elements.qrcodePreview.src = mapping.qrCodeData;
-          elements.qrcodePreviewContainer.classList.remove('hidden');
-        } else {
-          elements.qrcodePreviewContainer.classList.add('hidden');
-        }
-      } else {
-        elements.targetUrlGroup.classList.remove('hidden');
-        elements.wechatQrcodeGroup.classList.add('hidden');
-      }
-      
-      elements.mappingModal.classList.remove('hidden');
-    }
-
-    // 隐藏映射模态框
-    function hideMappingModal() {
-      elements.mappingModal.classList.add('hidden');
-    }
-
-    // 显示删除确认模态框
-    function showDeleteModal(path) {
-      state.currentDeletingPath = path;
-      elements.deleteConfirmText.textContent = `你确定要删除短链 "/${path}" 吗？此操作不可撤销。`;
-      elements.deleteModal.classList.remove('hidden');
-    }
-
-    // 隐藏删除确认模态框
-    function hideDeleteModal() {
-      elements.deleteModal.classList.add('hidden');
-      state.currentDeletingPath = null;
-    }
-
-    // 显示二维码预览
-    function showQrPreview(path) {
-      const mapping = state.mappings[path];
-      const url = `${window.location.origin}/${path}`;
-      
-      // 更新二维码
-      state.qrCodeStyling.update({
-        data: url
-      });
-      
-      state.qrCodeStyling.append(elements.qrCodeDisplay);
-      elements.qrCodePath.textContent = url;
-      elements.qrPreviewModal.classList.remove('hidden');
-    }
-
-    // 隐藏二维码预览
-    function hideQrPreview() {
-      elements.qrPreviewModal.classList.add('hidden');
-      elements.qrCodeDisplay.innerHTML = '';
-    }
-
-    // 登录
-    async function login(password) {
-      try {
-        const response = await fetch('/api/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ password }),
-          credentials: 'include'
+          elements.linksTableBody.appendChild(row);
         });
-        
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || '登录失败');
-        }
-        
-        showAdminPage();
-        await loadMappings();
-        showToast('登录成功', 'success');
-        return true;
-      } catch (error) {
-        console.error('登录失败:', error);
-        elements.loginError.textContent = error.message;
-        elements.loginError.classList.remove('hidden');
-        return false;
-      }
-    }
 
-    // 登出
-    async function logout() {
-      try {
-        await fetch('/api/logout', {
-          method: 'POST',
-          credentials: 'include'
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+          btn.addEventListener('click', () => editMapping(btn.dataset.path));
         });
-        showLoginPage();
-        showToast('已成功登出', 'info');
-      } catch (error) {
-        console.error('登出失败:', error);
-        showToast('登出失败，请重试', 'error');
-      }
-    }
 
-    // 创建或更新映射
-    async function saveMapping(formData) {
-      const isEdit = !!state.currentEditingPath;
-      const url = isEdit ? '/api/mappings' : '/api/mappings';
-      const method = isEdit ? 'PUT' : 'POST';
-      
-      try {
-        const response = await fetch(url, {
-          method: method,
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(formData),
-          credentials: 'include'
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+          btn.addEventListener('click', () => deleteMapping(btn.dataset.path));
         });
-        
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || (isEdit ? '更新失败' : '创建失败'));
-        }
-        
-        hideMappingModal();
-        await loadMappings();
-        showToast(isEdit ? '更新成功' : '创建成功', 'success');
-        return true;
-      } catch (error) {
-        console.error(isEdit ? '更新映射失败:' : '创建映射失败:', error);
-        showToast(error.message, 'error');
-        return false;
-      }
+      }, 300));
     }
 
-    // 删除映射
-    async function deleteMapping(path) {
-      try {
-        const response = await fetch(`/api/mappings/${path}`, {
-          method: 'DELETE',
-          credentials: 'include'
-        });
-        
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || '删除失败');
-        }
-        
-        hideDeleteModal();
-        await loadMappings();
-        showToast('删除成功', 'success');
-        return true;
-      } catch (error) {
-        console.error('删除映射失败:', error);
-        showToast(error.message, 'error');
-        return false;
-      }
+    // 防抖函数
+    function debounce(func, wait) {
+      let timeout;
+      return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
     }
 
-    // 显示提示消息
-    function showToast(message, type = 'info') {
-      elements.toastMessage.textContent = message;
-      
-      // 设置图标和样式
-      if (type === 'success') {
-        elements.toastIcon.className = 'mr-2 text-xl text-green-500';
-        elements.toastIcon.innerHTML = '<i class="fa fa-check-circle"></i>';
-        elements.toast.className = 'fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-y-0 opacity-100 z-50 flex items-center bg-green-50 text-green-800';
-      } else if (type === 'error') {
-        elements.toastIcon.className = 'mr-2 text-xl text-red-500';
-        elements.toastIcon.innerHTML = '<i class="fa fa-exclamation-circle"></i>';
-        elements.toast.className = 'fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-y-0 opacity-100 z-50 flex items-center bg-red-50 text-red-800';
-      } else {
-        elements.toastIcon.className = 'mr-2 text-xl text-blue-500';
-        elements.toastIcon.innerHTML = '<i class="fa fa-info-circle"></i>';
-        elements.toast.className = 'fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-y-0 opacity-100 z-50 flex items-center bg-blue-50 text-blue-800';
-      }
-      
-      // 3秒后隐藏
-      setTimeout(() => {
-        elements.toast.className = 'fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-y-20 opacity-0 z-50 flex items-center';
-      }, 3000);
-    }
-
-    // 下载二维码
-    function downloadQrCode() {
-      state.qrCodeStyling.download({
-        name: 'qrcode',
-        extension: 'png'
-      });
-    }
-
-    // 导出所有映射
-    async function exportMappings() {
-      try {
-        const response = await fetch('/api/mappings?page=1&pageSize=10000', {
-          credentials: 'include'
-        });
-        
-        if (!response.ok) {
-          throw new Error('导出失败');
-        }
-        
-        const data = await response.json();
-        const mappings = data.mappings;
-        
-        // 创建JSON文件并下载
-        const blob = new Blob([JSON.stringify(mappings, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `qrcode-hub-export-${new Date().toISOString().slice(0, 10)}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        showToast('导出成功', 'success');
-      } catch (error) {
-        console.error('导出失败:', error);
-        showToast('导出失败，请重试', 'error');
-      }
-    }
-
-    // 导入映射
-    async function importMappings(file) {
-      try {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          try {
-            const mappings = JSON.parse(e.target.result);
-            
-            // 验证导入的数据格式
-            if (typeof mappings !== 'object' || mappings === null) {
-              throw new Error('导入数据格式不正确');
-            }
-            
-            // 批量导入
-            const response = await fetch('/api/mappings/batch', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(mappings),
-              credentials: 'include'
-            });
-            
-            if (!response.ok) {
-              const data = await response.json();
-              throw new Error(data.error || '导入失败');
-            }
-            
-            await loadMappings();
-            showToast('导入成功', 'success');
-          } catch (error) {
-            console.error('导入处理失败:', error);
-            showToast(error.message, 'error');
-          }
-        };
-        reader.readAsText(file);
-      } catch (error) {
-        console.error('导入失败:', error);
-        showToast('导入失败，请重试', 'error');
-      }
-    }
-
-    // 绑定事件监听
-    function bindEvents() {
-      // 登录表单提交
-      elements.loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        elements.loginError.classList.add('hidden');
-        const password = elements.loginForm.elements.password.value;
-        await login(password);
-      });
-      
-      // 登出按钮
-      elements.logoutBtn.addEventListener('click', logout);
-      
-      // 添加按钮
-      elements.addBtn.addEventListener('click', showAddModal);
-      
-      // 取消模态框
-      elements.cancelModal.addEventListener('click', hideMappingModal);
-      
-      // 映射表单提交
-      elements.mappingForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        // 收集表单数据
-        const formData = {
-          path: elements.path.value.trim(),
-          target: elements.target.value.trim(),
-          name: elements.name.value.trim() || null,
-          expiry: elements.expiry.value || null,
-          enabled: elements.enabled.checked,
-          isWechat: elements.mappingType.value === 'wechat',
-          qrCodeData: elements.qrCodeData.value || null
-        };
-        
-        // 如果是编辑，添加原始路径
-        if (state.currentEditingPath) {
-          formData.originalPath = state.currentEditingPath;
-        }
-        
-        // 验证
-        if (!formData.path) {
-          showToast('短链路径不能为空', 'error');
-          return;
-        }
-        
-        if (!formData.isWechat && !formData.target) {
-          showToast('目标URL不能为空', 'error');
-          return;
-        }
-        
-        if (formData.isWechat && !formData.qrCodeData) {
-          showToast('请上传微信二维码', 'error');
-          return;
-        }
-        
-        await saveMapping(formData);
-      });
-      
-      // 映射类型切换
-      elements.mappingType.addEventListener('change', () => {
-        if (elements.mappingType.value === 'wechat') {
-          elements.targetUrlGroup.classList.add('hidden');
-          elements.wechatQrcodeGroup.classList.remove('hidden');
-        } else {
-          elements.targetUrlGroup.classList.remove('hidden');
-          elements.wechatQrcodeGroup.classList.add('hidden');
-        }
-      });
-      
-      // 二维码上传
-      elements.qrcodeUpload.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        // 验证文件类型和大小
-        const allowedTypes = ['image/png', 'image/jpeg', 'image/gif'];
-        if (!allowedTypes.includes(file.type)) {
-          showToast('请上传PNG、JPG或GIF格式的图片', 'error');
-          return;
-        }
-        
-        if (file.size > 5 * 1024 * 1024) {
-          showToast('图片大小不能超过5MB', 'error');
-          return;
-        }
-        
-        // 预览并转换为base64
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          elements.qrcodePreview.src = event.target.result;
-          elements.qrCodeData.value = event.target.result;
-          elements.qrcodePreviewContainer.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
-      });
-      
-      // 更换二维码
-      elements.changeQrcode.addEventListener('click', () => {
-        elements.qrcodeUpload.click();
-      });
-      
-      // 分页按钮
-      elements.prevPage.addEventListener('click', () => goToPage(state.currentPage - 1));
-      elements.nextPage.addEventListener('click', () => goToPage(state.currentPage + 1));
-      elements.prevPageMobile.addEventListener('click', () => goToPage(state.currentPage - 1));
-      elements.nextPageMobile.addEventListener('click', () => goToPage(state.currentPage + 1));
-      
-      // 删除确认
-      elements.confirmDelete.addEventListener('click', () => {
-        if (state.currentDeletingPath) {
-          deleteMapping(state.currentDeletingPath);
-        }
-      });
-      
-      // 取消删除
-      elements.cancelDelete.addEventListener('click', hideDeleteModal);
-      
-      // 关闭二维码预览
-      elements.qrPreviewModal.addEventListener('click', (e) => {
-        if (e.target === elements.qrPreviewModal) {
-          hideQrPreview();
-        }
-      });
-      
-      // 下载二维码
-      elements.downloadQr.addEventListener('click', downloadQrCode);
-      
-      // 导出映射
-      elements.exportBtn.addEventListener('click', exportMappings);
-      
-      // 导入映射
-      elements.importBtn.addEventListener('click', () => {
-        elements.importFile.click();
-      });
-      
-      elements.importFile.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-          importMappings(file);
-          // 重置文件输入，以便可以重复选择同一个文件
-          elements.importFile.value = '';
-        }
-      });
-      
-      // 搜索和过滤
-      elements.searchInput.addEventListener('input', (e) => {
-        state.searchQuery = e.target.value.trim();
-        renderMappingsTable();
-      });
-      
-      elements.filterStatus.addEventListener('change', (e) => {
-        state.filterStatus = e.target.value;
-        renderMappingsTable();
-      });
-      
-      elements.filterType.addEventListener('change', (e) => {
-        state.filterType = e.target.value;
-        renderMappingsTable();
-      });
-    }
-
-    // 启动应用
+    // 页面加载完成后初始化
     document.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
